@@ -466,7 +466,7 @@ byte ESP8266_Simple::serveHttpRequest()
   if(!this->espSerial->available()) return ESP8266_OK; // Nothing to do
 
   char cmdBuffer[64];
-  char hdrBuffer[45];     
+  char hdrBuffer[64];     
   
   char dataBuffer[this->httpServerMaxBufferSize];
   int  requestLength;
