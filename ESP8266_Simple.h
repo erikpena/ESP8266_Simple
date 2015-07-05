@@ -40,6 +40,11 @@
 #define ESP8266_READY          4
 #define ESP8266_BUSY           5
 
+#define ESP8266_ECN_OPEN            0
+#define ESP8266_ECN_WPA_PSK         2
+#define ESP8266_ECN_WPA2_PSK        3
+#define ESP8266_ECN_WPA_WPA2_PSK    4
+
 #define ESP82336_DEBUG(...)   Serial.print(__VA_ARGS__); 
 #define ESP82336_DEBUGLN(...) Serial.println(__VA_ARGS__); 
 
@@ -102,6 +107,19 @@ class ESP8266_Simple
       
       byte setupAsWifiStation(const char *SSID, const char *Password, Print *debugPrinter = NULL);
       
+      /** 
+       * Configure the AP settings that the ESP8266 module will use to act as an access point.
+       * 
+       * @param SSID The SSID to connect to.
+       * @param Password The Password for this wifi network.
+       * @param Channel The 802.11 wireless channel to operate under.
+       * @param ECN The encryption method to use.  See above #defines prefixed with ESP8266_ECN_*
+       * @param debugPrinter An optional place to print some information (eg, &Serial)
+       * 
+       * @return ESP8266_OK, or an error code
+       */
+      byte setupAsWifiNetwork(const char *SSID, const char *Password, int Channel, int ECN, Print *debugPrinter = NULL);
+
       /**
        * Perform an HTTP GET operation to get data from a server on the network (or internet).
        *  F() macro version.
@@ -161,7 +179,7 @@ class ESP8266_Simple
       // https://scargill.wordpress.com/2014/10/08/esp8266-as-an-access-point/
       // Access Point Mode, returns IPv4 address (as 4 bytes)
       // @TODO
-      // long createWifiNetwork(const char *SSID, const char *Password, byte Encryption, byte Channel);
+      long createWifiNetwork(const char *SSID, const char *Password, int Channel, int Encryption);
      
       // Disconnect from access point
       byte disconnectFromWifi();            

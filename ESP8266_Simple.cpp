@@ -147,10 +147,72 @@ byte ESP8266_Simple::setupAsWifiStation(const char *SSID, const char *Password, 
       }      
       delay(1000);
     }
+  } while(responseCode != ESP8266_OK);  
+}
+
+byte ESP8266_Simple::setupAsWifiNetwork(const char *SSID, const char *Password, int Channel, int Encryption, Print *debugPrinter)
+{
+  if(!strlen(SSID) || !strlen(Password))
+  {
+    if(debugPrinter)
+    {
+      debugPrinter->println(F("Missing SSID/Password, see sketch #defines."));
+      while(1);
+    }
+  }
+
+  byte responseCode;
+  
+  // Reset the ESP8266 Device (soft reset)
+  do
+  { // Keep trying to reset until it works
+    if(debugPrinter)
+    {
+      debugPrinter->print(F("Reset: "));
+    }
+    
+    responseCode = this->reset();
+    if(responseCode == ESP8266_OK)
+    {
+      if(debugPrinter)
+      {
+        debugPrinter->println("OK");
+      }
+    }
+    else
+    {
+      if(debugPrinter)
+      {
+        this->debugPrintError(responseCode, debugPrinter);      
+      }
+      delay(1000);
+    }
   } while(responseCode != ESP8266_OK);
 
-  
-  
+  // Create a Wifi Network
+  do
+  { // Keep trying to create until it works
+    if(debugPrinter)
+    {
+      debugPrinter->print(F("Create: "));
+    }
+    responseCode = this->createWifiNetwork(SSID, Password, Channel, Encryption);
+    if(responseCode == ESP8266_OK)
+    {
+      if(debugPrinter)
+      {
+        debugPrinter->println(F("OK"));
+      }              
+    }
+    else
+    {
+      if(debugPrinter)
+      {
+        this->debugPrintError(responseCode, debugPrinter);      
+      }
+      delay(1000);
+    }
+  } while(responseCode != ESP8266_OK);
 }
 
 unsigned int ESP8266_Simple::GET(const __FlashStringHelper *serverIp, int port, char *requestPathAndResponseBuffer, int bufferLength, const __FlashStringHelper *httpHost, int bodyResponseOnlyFromLine)
@@ -281,17 +343,6 @@ long ESP8266_Simple::connectToWifi(const char *SSID, const char *Password)
   byte returnValue;
   unsigned long previousTimeout = this->generalCommandTimeoutMicroseconds;
   
-  // First set to client mode
-  returnValue = this->setWifiMode(ESP8266_STATION);
-  if(returnValue != ESP8266_OK) return returnValue;
-  
-  // Not sure if a QAP is a good idea here?
-  /*
-    returnValue = this->disconnectFromWifi();
-    if(returnValue != ESP8266_OK) return returnValue;
-  */
-  
-  
   char atCmd[11];
   strcpy_P(atCmd, PSTR("AT+CWJAP=\"")); // PSTR monkeying to save a few bytes
   const char *cmdParts[] = {
@@ -307,6 +358,31 @@ long ESP8266_Simple::connectToWifi(const char *SSID, const char *Password)
 
   returnValue = this->sendCommand((const char **)cmdParts,(byte)5, (char *)NULL,(int)0, (byte)1);
   this->generalCommandTimeoutMicroseconds = previousTimeout;
+  return returnValue;
+}
+
+long ESP8266_Simple::createWifiNetwork(const char *SSID, const char *Password, int Channel, int Encryption)
+{
+  byte returnValue;
+  unsigned long previousTimeout = this->generalCommandTimeoutMicroseconds;
+  
+  char cmdBuffer[64];
+
+  memset(cmdBuffer, 0, sizeof(cmdBuffer));
+  strcpy_P(cmdBuffer, PSTR("AT+CWSAP=\""));
+  strcpy(cmdBuffer + strlen(cmdBuffer), SSID);
+  strcpy(cmdBuffer + strlen(cmdBuffer), "\",\"");
+  strcpy(cmdBuffer + strlen(cmdBuffer), Password);
+  strcpy(cmdBuffer + strlen(cmdBuffer), "\",");
+  itoa(Channel, cmdBuffer + strlen(cmdBuffer), 10);
+  strcpy(cmdBuffer + strlen(cmdBuffer), ",");
+  itoa(Encryption, cmdBuffer + strlen(cmdBuffer), 10);
+  
+  this->generalCommandTimeoutMicroseconds = max((long)5*1000*1000, this->generalCommandTimeoutMicroseconds);
+
+  returnValue = this->sendCommand(cmdBuffer, (char *)NULL,(int)0, (byte)1);
+  this->generalCommandTimeoutMicroseconds = previousTimeout;
+
   return returnValue;
 }
 
