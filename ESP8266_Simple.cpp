@@ -518,6 +518,8 @@ byte ESP8266_Simple::serveHttpRequest()
           break;          
 
       }
+      strncpy_P(hdrBuffer + strlen(hdrBuffer), PSTR("\r\nContent-Length: "), sizeof(hdrBuffer) - strlen(hdrBuffer) - 1);
+      itoa(strlen(dataBuffer), hdrBuffer + strlen(hdrBuffer), 10);
       strncpy_P(hdrBuffer+strlen(hdrBuffer), PSTR("\r\n\r\n"), sizeof(hdrBuffer)-strlen(hdrBuffer)-1);
     }
     
